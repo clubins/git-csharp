@@ -87,6 +87,35 @@ public sealed class DerivedDataStore
     }
 
     /// <summary>
+    /// Reads the value whose payload hashes to <paramref name="valueHash"/> — the content-addressed
+    /// lookup that resolves a tree id (a value's hash is the tree snapshot's id) without knowing
+    /// which changeset produced it. The payload is hash-validated on the way out, like
+    /// <see cref="TryGet"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The stored payload does not hash to its stored hash.</exception>
+    public bool TryGetByValueHash(string typeName, string valueHash, [NotNullWhen(true)] out DerivedDataValue? value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(typeName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(valueHash);
+
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT payload_hash, payload FROM derived_values WHERE type_name = @type AND payload_hash = @hash";
+        command.Parameters.AddWithValue("@type", typeName);
+        command.Parameters.AddWithValue("@hash", valueHash.ToLowerInvariant());
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            value = null;
+            return false;
+        }
+
+        value = ReadValidatedValue(reader, typeName, valueHash);
+        return true;
+    }
+
+    /// <summary>
     /// Writes one value. The payload is hash-checked before any disk touch, and the write is
     /// idempotent: a row already present with identical bytes is a no-op, while a row present
     /// with different bytes means two supposedly-pure computations disagreed — corruption, refused.
