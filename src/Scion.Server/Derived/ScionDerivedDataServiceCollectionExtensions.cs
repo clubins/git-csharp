@@ -9,15 +9,15 @@ namespace Scion.Server.Derived;
 /// <summary>
 /// Registration for the derived-data layer: the derived-value store (beside the changeset log in
 /// the shared database), the engine over it with every v1 derived type registered, the boot sweep
-/// that materializes eager types before the first request, and the read endpoint module that
-/// queries through the engine. Any endpoint needing derived values — a fetch module walking trees,
+/// that materializes eager types before the first request, and the endpoint modules that query
+/// through the engine. Any endpoint needing derived values — a fetch module walking trees,
 /// a merge-base query over the skip graph — resolves the same engine singleton: one memo, one
 /// store, one registry of types.
 /// </summary>
 public static class ScionDerivedDataServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the derived-data store, engine, boot sweep, and read endpoints. Composes with
+    /// Registers the derived-data store, engine, boot sweep, and query endpoints. Composes with
     /// <see cref="ScionStorageServiceCollectionExtensions.AddScionStorage"/>, which registers the
     /// changeset log the engine replays from and the options binding that names the data directory.
     /// </summary>
@@ -33,9 +33,15 @@ public static class ScionDerivedDataServiceCollectionExtensions
 
         services.AddHostedService<DerivedDataMaterializationService>();
         services.AddSingleton<IScionEndpoints, ReadEndpoints>();
+
         // History operations: merge-base queries and the server-side merge / rebase that produce
         // changesets — they read the derived trees, so they register beside the engine's read module.
         services.AddSingleton<IScionEndpoints, QueryMergeEndpoints>();
+
+        // Query endpoints: server-side diff between any two changesets and per-line blame —
+        // read-only queries over the derived trees, registered beside the other read modules.
+        services.AddSingleton<IScionEndpoints, QueryDiffBlameEndpoints>();
+
         return services;
     }
 
