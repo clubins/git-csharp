@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Data.Sqlite;
 
 namespace Scion.Core.Storage;
@@ -170,6 +172,28 @@ public sealed class ChangesetLog
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT id, canonical FROM changesets WHERE id = @id";
         command.Parameters.AddWithValue("@id", id);
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            changeset = null;
+            return false;
+        }
+
+        changeset = ReadValidatedChangeset(reader);
+        return true;
+    }
+
+    /// <summary>
+    /// Fetches the most recently appended changeset, validating it like <see cref="Replay"/>
+    /// does. This is the walk's starting point a client means when it names no tip at all: the
+    /// newest appended entry is the youngest head the log knows.
+    /// </summary>
+    public bool TryGetNewest([NotNullWhen(true)] out Changeset? changeset)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, canonical FROM changesets ORDER BY seq DESC LIMIT 1";
         using var reader = command.ExecuteReader();
 
         if (!reader.Read())
