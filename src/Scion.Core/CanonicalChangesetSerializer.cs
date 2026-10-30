@@ -118,8 +118,11 @@ public static class CanonicalChangesetSerializer
         var timestampUtc = reader.ReadI64();
         reader.EnsureEnd();
 
-        var parents = parentsBuilder.ToImmutable();
-        var changes = changesBuilder.ToImmutable();
+        // CreateBuilder(...).ToImmutable() yields a *default* (null-backed) array when nothing was
+        // added; a decoded root must be observationally identical to a constructed one — [] not
+        // default — because foreach over a default ImmutableArray throws.
+        var parents = parentsBuilder.Count == 0 ? [] : parentsBuilder.ToImmutable();
+        var changes = changesBuilder.Count == 0 ? [] : changesBuilder.ToImmutable();
         var author = new Author(authorName, authorEmail);
 
         return new Changeset(

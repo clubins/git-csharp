@@ -128,6 +128,31 @@ public class CanonicalChangesetSerializerTests
     }
 
     [Fact]
+    public void Deserialize_RootEncoding_ProducesEnumerableParentsAndChanges()
+    {
+        // Regression: CreateBuilder().ToImmutable() used to hand back a *default* ImmutableArray
+        // for zero elements, so foreach over a decoded root's Parents/Changes threw
+        // NullReferenceException even though Assert.Empty passed. A decoded root must behave like
+        // a constructed one under enumeration.
+        var original = Changeset.Create([], [], "root", new Author("name", string.Empty), 0);
+
+        var decoded = CanonicalChangesetSerializer.Deserialize(CanonicalChangesetSerializer.Serialize(original));
+
+        Assert.Equal(original, decoded);
+        Assert.False(decoded.Parents.IsDefault, "decoded Parents must be [], not a default ImmutableArray");
+        Assert.False(decoded.Changes.IsDefault, "decoded Changes must be [], not a default ImmutableArray");
+        foreach (var parent in decoded.Parents)
+        {
+            Assert.Fail("A root changeset has no parents, yet one was enumerated.");
+        }
+
+        foreach (var change in decoded.Changes)
+        {
+            Assert.Fail("An empty change list was enumerated.");
+        }
+    }
+
+    [Fact]
     public void Deserialize_MinimalRootEncoding_IsAccepted()
     {
         var changeset = CanonicalChangesetSerializer.Deserialize(MinimalOneChangeEncoding(

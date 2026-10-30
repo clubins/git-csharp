@@ -18,7 +18,7 @@ fleets").
 
 | Area | Purpose |
 |---|---|
-| `src/Scion.Core` | Changeset/blob object model, SHA-256 content addressing, diff, merge, merge-base, skip-graph |
+| `src/Scion.Core` | Changeset/blob object model, SHA-256 content addressing, diff, merge, merge-base, skip-graph, derived-data engine |
 | `src/Scion.Server` | ASP.NET Core minimal APIs: changeset creation, history/diff/blame queries, ref CAS, blob store |
 | `src/Scion.Cli` | The `scn` thin client: init, commit, log, diff, checkout; bounded LRU cache |
 | `src/Scion.Import.Git` | One-way git -> changeset import (LibGit2Sharp) |
