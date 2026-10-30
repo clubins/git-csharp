@@ -33,6 +33,9 @@ public static class ScionDerivedDataServiceCollectionExtensions
 
         services.AddHostedService<DerivedDataMaterializationService>();
         services.AddSingleton<IScionEndpoints, ReadEndpoints>();
+        // History operations: merge-base queries and the server-side merge / rebase that produce
+        // changesets — they read the derived trees, so they register beside the engine's read module.
+        services.AddSingleton<IScionEndpoints, QueryMergeEndpoints>();
         return services;
     }
 
