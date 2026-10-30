@@ -149,6 +149,22 @@ public sealed class BlobStore
         }
     }
 
+    /// <summary>
+    /// Opens the blob stored at <paramref name="hash"/> for streamed reading — the streaming twin
+    /// of <see cref="ReadAsync"/>: content is decompressed on the fly and never materialized whole
+    /// in memory, so callers copy it through a bounded buffer. Integrity is the caller's to check:
+    /// hash the fully drained content and compare it to the addressed hash — a digest is only
+    /// complete at the end of a stream, so streaming cannot self-verify the way a buffered read can.
+    /// </summary>
+    /// <exception cref="BlobNotFoundException">No blob is stored at the hash.</exception>
+    /// <exception cref="BlobTooLargeException">The stored file exceeds the size cap.</exception>
+    public Stream OpenReadStream(string hash)
+    {
+        var (addressed, path) = ValidateForRead(hash);
+        var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return new ZLibStream(file, CompressionMode.Decompress, leaveOpen: false);
+    }
+
     /// <summary>True when a blob is stored at <paramref name="hash"/>.</summary>
     /// <exception cref="ArgumentException">The hash is not a 64-character hex SHA-256.</exception>
     public bool Exists(string hash)
