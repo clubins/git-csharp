@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core;
 using Scion.Core.Storage;
@@ -41,7 +42,15 @@ internal sealed class BlobEndpoints(BlobStore blobStore) : IScionEndpoints
             return Results.Json(
                 new BlobUploadResponse(stored),
                 statusCode: isNew ? StatusCodes.Status201Created : StatusCodes.Status200OK);
-        });
+        })
+        .WithTags("blobs")
+        .WithSummary("Store one blob under its content address")
+        .WithDescription(
+            "The body is the raw blob content; the server verifies it hashes to the addressed SHA-256 before storing. " +
+            "Re-uploads are no-ops: 201 when this request newly stored the blob, 200 when it already existed — which makes uploads safe to retry.")
+        .Produces<BlobUploadResponse>(StatusCodes.Status201Created)
+        .Produces<BlobUploadResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
     }
 
     /// <summary>True for 64 hex characters — the only acceptable shape for a content address.</summary>

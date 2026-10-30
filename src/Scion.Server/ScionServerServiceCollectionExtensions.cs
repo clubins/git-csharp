@@ -30,8 +30,21 @@ public static class ScionServerServiceCollectionExtensions
                 "Scion:AuthToken must be configured: the server refuses to start without a bearer token.")
             .ValidateOnStart();
 
+        services.AddExceptionHandler<MalformedBodyExceptionHandler>();
         services.AddExceptionHandler<ScionExceptionHandler>();
         services.AddProblemDetails();
+
+        // The machine-readable API contract (spec D5): generated from the same route metadata the
+        // server serves, so the document cannot drift from the routes. Transformers below add the
+        // pieces route metadata cannot express — the bearer scheme, the 401 it implies, and the
+        // lowercase enum values the wire actually carries.
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer(ScionOpenApi.AddBearerScheme);
+            options.AddOperationTransformer(ScionOpenApi.AddAuthRequirements);
+            options.AddSchemaTransformer(ScionOpenApi.LowercaseEnumValues);
+        });
+
         return services;
     }
 }

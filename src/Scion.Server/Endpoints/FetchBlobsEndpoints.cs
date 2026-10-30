@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core.Storage;
 using Scion.Server.Errors;
@@ -73,7 +74,18 @@ internal sealed class FetchBlobsEndpoints(BlobStore blobStore) : IScionEndpoints
                         throw new BlobHashMismatchException(hash, actualHash: null, failure);
                     }
                 }
-            });
+            })
+        .WithTags("fetch")
+        .WithSummary("Fetch missing blobs as a framed octet stream")
+        .WithDescription(
+            "The read half of blob transfer: name the content addresses the cache lacks, and the server answers " +
+            "application/octet-stream with one framed entry per requested hash in request order (duplicates served once): " +
+            "64 ASCII bytes of lowercase-hex hash key, then length-prefixed chunks — 8-byte unsigned little-endian length " +
+            "plus that many content bytes — terminated by a zero-length chunk. Existence is settled before the stream starts: " +
+            "a request naming an absent blob is a 404 problem response, never a hole in the stream.")
+        .Produces(StatusCodes.Status200OK, contentType: "application/octet-stream")
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>The requested hashes, malformed ones rejected, deduplicated in first-seen order.</summary>

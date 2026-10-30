@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core;
 using Scion.Core.Derived;
@@ -41,7 +42,15 @@ internal sealed class ReadEndpoints(ChangesetLog changesetLog, DerivedDataEngine
             }
 
             return Results.Json(ChangesetResponse.From(changeset!));
-        });
+        })
+        .WithTags("changesets")
+        .WithSummary("Fetch one stored changeset by id")
+        .WithDescription(
+            "The canonical record the client hashed, unchanged: parents in order, paths changed relative to the first parent, " +
+            "message, author, timestamp. A pure server-side query — the client names an object, the server answers; no graph " +
+            "is walked on the client.")
+        .Produces<ChangesetResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         endpoints.MapGet("/rpc/log", (string? tip, string? after, string? limit) =>
         {
@@ -63,7 +72,16 @@ internal sealed class ReadEndpoints(ChangesetLog changesetLog, DerivedDataEngine
                 : null;
 
             return Results.Json(new LogPageResponse([.. entries], nextAfter));
-        });
+        })
+        .WithTags("history")
+        .WithSummary("Page first-parent history from a tip")
+        .WithDescription(
+            "Walks newest-first along first-parent lineage from the named tip (or the newest appended changeset), one bounded " +
+            "page per request. nextAfter carries the cursor for the next page — send it back as 'after' — or is null when the " +
+            "walk reached the end of the lineage. The cursor wins over the tip, so a client may send both and page on regardless.")
+        .Produces<LogPageResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         endpoints.MapGet("/rpc/path-history", (string? changeset, string? path) =>
         {
@@ -88,7 +106,15 @@ internal sealed class ReadEndpoints(ChangesetLog changesetLog, DerivedDataEngine
             var value = derivedData.Get(PathHistoryDerivedData.TypeName, changeset);
             var history = PathHistoryValue.Deserialize(value.Payload.Span).HistoryOf(path);
             return Results.Json(new PathHistoryResponse(path, [.. history]));
-        });
+        })
+        .WithTags("history")
+        .WithSummary("Answer a path's touching changesets")
+        .WithDescription(
+            "The changesets that touched a path as of the named changeset, oldest first — answered from the path-history " +
+            "derived index, not by walking history locally. A path never touched as of that changeset answers an empty list.")
+        .Produces<PathHistoryResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>
