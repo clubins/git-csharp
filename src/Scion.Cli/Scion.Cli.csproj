@@ -4,4 +4,17 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scion.Core\Scion.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The test suite drives the internal command pipeline directly. -->
+    <InternalsVisibleTo Include="Scion.Cli.Tests" />
+  </ItemGroup>
+
 </Project>
