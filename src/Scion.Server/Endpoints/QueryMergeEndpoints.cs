@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core;
 using Scion.Core.Derived;
@@ -59,7 +60,16 @@ internal sealed class QueryMergeEndpoints(
             // base, is where disjointness becomes a 400.
             var graph = BuildClosedAncestry(firstId, secondId);
             return Results.Json(new MergeBaseResponse(firstId, secondId, MergeBasePolicy.Select(graph, firstId, secondId)));
-        });
+        })
+        .WithTags("merge")
+        .WithSummary("Best common base of two changesets")
+        .WithDescription(
+            "Answered over the two tips' closed ancestry via the skip-graph — a log-depth query, not a local graph search. " +
+            "Disjoint histories are a legitimate answer: mergeBase is null, not an error. Merge, which cannot proceed without " +
+            "a base, is where disjointness becomes a 400.")
+        .Produces<MergeBaseResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         endpoints.MapPost("/rpc/merge", async (MergeRequest request, CancellationToken cancellationToken) =>
         {
@@ -119,7 +129,18 @@ internal sealed class QueryMergeEndpoints(
             return Results.Json(
                 new MergeResponse(mergeBase, mergeChangeset.Id, refState, []),
                 statusCode: StatusCodes.Status201Created);
-        });
+        })
+        .WithTags("merge")
+        .WithSummary("Merge two tips server-side")
+        .WithDescription(
+            "The merge runs entirely server-side and appends the merge changeset (first parent ours, second theirs) — result " +
+            "is new changesets, nothing to push. Clean: 201 with the appended id. Conflicted: 409, nothing appended, conflicts " +
+            "carry path, kind, both sides' blobs, and the conflict-marked merged text, so an agent resolves without recomputing. " +
+            "Disjoint histories are a 400. The optional ref move is a compare-and-swap applied after the append.")
+        .Produces<MergeResponse>(StatusCodes.Status201Created)
+        .Produces<MergeResponse>(StatusCodes.Status409Conflict)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         endpoints.MapPost("/rpc/rebase", async (RebaseRequest request, CancellationToken cancellationToken) =>
         {
@@ -159,7 +180,18 @@ internal sealed class QueryMergeEndpoints(
             return Results.Json(
                 new RebaseResponse(newBaseId, rebased, conflicts, refState),
                 statusCode: StatusCodes.Status201Created);
-        });
+        })
+        .WithTags("merge")
+        .WithSummary("Replay a first-parent chain onto a new base")
+        .WithDescription(
+            "Replays the chain from start (inclusive, oldest) to tip (inclusive, newest) onto newBase, entirely server-side: " +
+            "every source changeset yields exactly one rebased changeset, appended and first-parent linked. Always 201 — replay " +
+            "never aborts; conflicted paths keep the new base's state and the conflicts ride the response, each naming the source " +
+            "step it belongs to. Message, author, timestamp carry over from the sources; ids differ. The optional ref move CAS " +
+            "publishes the rebased tip.")
+        .Produces<RebaseResponse>(StatusCodes.Status201Created)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>

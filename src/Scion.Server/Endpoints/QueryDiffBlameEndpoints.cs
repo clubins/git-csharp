@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core;
 using Scion.Core.Derived;
@@ -43,7 +44,16 @@ internal sealed class QueryDiffBlameEndpoints(
             var before = TreeAt(ResolveExisting(from).Id);
             var after = TreeAt(ResolveExisting(to).Id);
             return Results.Json(new DiffResponse(from, to, [.. TreeDiff.Diff(before, after)]));
-        });
+        })
+        .WithTags("diff-blame")
+        .WithSummary("Delta between any two changesets' trees")
+        .WithDescription(
+            "Every changed path between two tree snapshots in canonical change order — the same shape a changeset's own delta " +
+            "carries. Any two changesets diff, related or not: the trees are content-addressed states. Renames appear as the " +
+            "old path's deletion plus a renamed entry on the new path. Answered server-side from derived data; no local walk.")
+        .Produces<DiffResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         endpoints.MapGet("/rpc/blame", (string? changeset, string? path) =>
         {
@@ -106,7 +116,16 @@ internal sealed class QueryDiffBlameEndpoints(
                 changeset,
                 path,
                 [.. lines.Select(line => new BlameLineResponse(line.Line, line.ChangesetId, line.Content))]));
-        });
+        })
+        .WithTags("diff-blame")
+        .WithSummary("Per-line blame at one changeset")
+        .WithDescription(
+            "Every line of the file's content at the named changeset, each with the changeset that introduced it — the " +
+            "path-history chain walked through the line diff, server-side. Line content keeps its terminating newline. " +
+            "Rename chains resolve backward through pre-rename names automatically.")
+        .Produces<BlameResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>Fetches a changeset the client named by id; an absent one is a 404 (spec C7).</summary>

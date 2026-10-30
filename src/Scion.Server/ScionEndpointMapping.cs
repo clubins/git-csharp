@@ -24,7 +24,17 @@ public static class ScionServerEndpointExtensions
     {
         // Liveness probe: static body, carries no repository data. Anonymous by design so
         // orchestrators can probe without a bearer token; every other endpoint is authenticated.
-        app.MapGet("/healthz", () => Results.Ok(LivenessResponse.Ok)).AllowAnonymous();
+        app.MapGet("/healthz", () => Results.Ok(LivenessResponse.Ok))
+        .WithTags("health")
+        .WithSummary("Liveness probe")
+        .WithDescription("Static body, carries no repository data. Anonymous: orchestrators probe without a bearer token.")
+        .Produces(StatusCodes.Status200OK, contentType: "application/json")
+        .AllowAnonymous();
+
+        // The machine-readable API contract (spec D5), served as /openapi/v1.json. Anonymous like
+        // /healthz: the document describes the public contract and carries no repository data —
+        // agents and CI fetch it to discover the API before they hold a token.
+        app.MapOpenApi().AllowAnonymous();
 
         foreach (var module in app.Services.GetServices<IScionEndpoints>())
         {

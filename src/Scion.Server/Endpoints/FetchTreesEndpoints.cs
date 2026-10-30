@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Scion.Core;
 using Scion.Core.Derived;
@@ -40,7 +42,17 @@ internal sealed class FetchTreesEndpoints(
             var present = walked.BlobHashes.Where(hash => !missingSet.Contains(hash)).ToList();
 
             return Results.Json(new FetchTreesMissingResponse(rootTree, present, missing, walked.Entries));
-        });
+        })
+        .WithTags("fetch")
+        .WithSummary("Report which blobs a tree walk still needs")
+        .WithDescription(
+            "The server's half of the wanted-object fetch protocol: name the tree by changeset id or by the tree snapshot's own " +
+            "hash (exactly one), plus the glob patterns that scope the walk. The server walks its own snapshot and reports which " +
+            "referenced blob hashes it holds (presentBlobs) and which it lacks (missingBlobs). A client that wants files asks this " +
+            "first, then fetches only the missing blobs — never a full checkout.")
+        .Produces<FetchTreesMissingResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
     }
 
     /// <summary>
