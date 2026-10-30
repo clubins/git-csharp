@@ -53,27 +53,27 @@ public static class CanonicalChangesetSerializer
         using var buffer = new MemoryStream();
         buffer.WriteByte(FormatVersion);
 
-        WriteU32(buffer, (uint)parents.Length);
+        CanonicalFormat.WriteU32(buffer, (uint)parents.Length);
         foreach (var parent in parents)
         {
-            WriteString(buffer, parent);
+            CanonicalFormat.WriteString(buffer, parent);
         }
 
         var canonicalChanges = CanonicalChangeOrder.Canonicalize(changes);
-        WriteU32(buffer, (uint)canonicalChanges.Length);
+        CanonicalFormat.WriteU32(buffer, (uint)canonicalChanges.Length);
         foreach (var change in canonicalChanges)
         {
-            WriteString(buffer, change.Path);
+            CanonicalFormat.WriteString(buffer, change.Path);
             buffer.WriteByte((byte)change.Type);
             buffer.WriteByte((byte)change.Kind);
-            WriteOptionalString(buffer, change.OldBlob);
-            WriteOptionalString(buffer, change.NewBlob);
+            CanonicalFormat.WriteOptionalString(buffer, change.OldBlob);
+            CanonicalFormat.WriteOptionalString(buffer, change.NewBlob);
         }
 
-        WriteString(buffer, message);
-        WriteString(buffer, author.Name);
-        WriteString(buffer, author.Email);
-        WriteI64(buffer, timestampUtc);
+        CanonicalFormat.WriteString(buffer, message);
+        CanonicalFormat.WriteString(buffer, author.Name);
+        CanonicalFormat.WriteString(buffer, author.Email);
+        CanonicalFormat.WriteI64(buffer, timestampUtc);
 
         return buffer.ToArray();
     }
@@ -158,39 +158,6 @@ public static class CanonicalChangesetSerializer
         }
 
         return converted;
-    }
-
-    private static void WriteU32(MemoryStream stream, uint value)
-    {
-        Span<byte> bytes = stackalloc byte[4];
-        BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
-        stream.Write(bytes);
-    }
-
-    private static void WriteI64(MemoryStream stream, long value)
-    {
-        Span<byte> bytes = stackalloc byte[8];
-        BinaryPrimitives.WriteInt64BigEndian(bytes, value);
-        stream.Write(bytes);
-    }
-
-    private static void WriteString(MemoryStream stream, string value)
-    {
-        var encoded = Encoding.UTF8.GetBytes(value);
-        WriteU32(stream, (uint)encoded.Length);
-        stream.Write(encoded);
-    }
-
-    private static void WriteOptionalString(MemoryStream stream, string? value)
-    {
-        if (value is null)
-        {
-            stream.WriteByte(0);
-            return;
-        }
-
-        stream.WriteByte(1);
-        WriteString(stream, value);
     }
 
     /// <summary>Cursor over the canonical bytes; every read validates the remaining length.</summary>
