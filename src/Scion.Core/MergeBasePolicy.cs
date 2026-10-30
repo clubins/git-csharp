@@ -90,4 +90,17 @@ public static class MergeBasePolicy
 
         return best;
     }
+
+    /// <summary>
+    /// <see cref="Select"/> for callers that cannot proceed without a base — a three-way merge,
+    /// chief among them. Disjoint histories throw: two changesets sharing no ancestor have no
+    /// base to diff from, and that must be loud, not a silent empty-base merge.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The histories are disjoint.</exception>
+    public static string SelectRequired(SkipGraph graph, string first, string second)
+    {
+        return Select(graph, first, second)
+            ?? throw new InvalidOperationException(
+                $"'{first}' and '{second}' have disjoint histories — no common changeset to merge from.");
+    }
 }

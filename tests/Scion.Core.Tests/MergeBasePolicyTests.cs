@@ -111,6 +111,27 @@ public class MergeBasePolicyTests
         Assert.Throws<KeyNotFoundException>(() => MergeBasePolicy.Select(graph, "anything", "anything-else"));
     }
 
+    [Fact]
+    public void SelectRequired_ReturnsTheSameBaseAsSelect()
+    {
+        var chain = SkipGraphTestDag.Chain(3);
+        var graph = SkipGraph.Build(chain);
+
+        Assert.Equal(chain[1].Id, MergeBasePolicy.SelectRequired(graph, chain[2].Id, chain[1].Id));
+        Assert.Equal(MergeBasePolicy.Select(graph, chain[2].Id, chain[1].Id), MergeBasePolicy.SelectRequired(graph, chain[2].Id, chain[1].Id));
+    }
+
+    [Fact]
+    public void SelectRequired_OnDisjointHistories_Throws()
+    {
+        var changesets = SkipGraphTestDag.TwoRoots();
+        var graph = SkipGraph.Build(changesets);
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => MergeBasePolicy.SelectRequired(graph, changesets[1].Id, changesets[3].Id));
+        Assert.Contains("disjoint", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// An asymmetric criss-cross leaving three maximal common ancestors for tips p and q —
     /// c, g, and d. Indices: [root, b, c, g, d, e, f, p, q]. The c/d criss-cross merges e and f,
