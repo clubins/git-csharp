@@ -1,9 +1,10 @@
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Scion.Server;
+using Scion.Server.Auth;
 
 namespace Scion.Server.Tests;
 
@@ -45,19 +46,20 @@ public sealed class ScionServerFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // In-memory settings override app defaults. The null-token case configures nothing —
-        // it exists for the fail-closed startup test.
-        var settings = new Dictionary<string, string?>
+        builder.ConfigureServices(services =>
         {
-            ["Logging:LogLevel:Default"] = "Warning",
-        };
-        if (configuredToken is not null)
-        {
-            settings["Scion:AuthToken"] = configuredToken;
-        }
+            // The token is supplied at the options layer, not via configuration: the factory's
+            // IWebHostBuilder configuration callbacks did not reach the app's IConfiguration the
+            // server binds from (observed: BindConfiguration saw no token), while services
+            // registered here do flow. Registering after AddScionServer's BindConfiguration
+            // means this configure step runs last and wins.
+            if (configuredToken is not null)
+            {
+                services.AddSingleton<IConfigureOptions<ScionAuthOptions>>(
+                    new ConfigureNamedOptions<ScionAuthOptions>(Options.DefaultName, options => options.Token = configuredToken));
+            }
 
-        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
-
-        builder.ConfigureServices(services => services.AddSingleton<IScionEndpoints>(new ErrorProbeEndpoints()));
+            services.AddSingleton<IScionEndpoints>(new ErrorProbeEndpoints());
+        });
     }
 }

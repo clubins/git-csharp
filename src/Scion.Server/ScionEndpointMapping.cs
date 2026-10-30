@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+
 namespace Scion.Server;
 
 /// <summary>
@@ -22,7 +24,7 @@ public static class ScionServerEndpointExtensions
     {
         // Liveness probe: static body, carries no repository data. Anonymous by design so
         // orchestrators can probe without a bearer token; every other endpoint is authenticated.
-        app.MapGet("/healthz", () => Results.Ok(LivenessResponse.Ok));
+        app.MapGet("/healthz", () => Results.Ok(LivenessResponse.Ok)).AllowAnonymous();
 
         foreach (var module in app.Services.GetServices<IScionEndpoints>())
         {
