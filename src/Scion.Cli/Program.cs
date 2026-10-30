@@ -4,9 +4,9 @@ namespace Scion.Cli;
 
 /// <summary>
 /// The <c>scn</c> entry point: the root command with its global <c>-C</c> option (run as if
-/// started in this directory, like git's), the thin client's commands, and the
-/// failure mapping — parse errors are printed by the framework, command failures surface as
-/// one-line messages on stderr with exit code 1.
+/// started in this directory, like git's), the thin client's commands, and the failure mapping —
+/// parse errors are printed by the framework, command failures surface as one-line messages on
+/// stderr with exit code 1.
 /// </summary>
 internal static class Program
 {
@@ -46,6 +46,7 @@ internal static class Program
             Commands.CommitCommand.Build(context, WorkingDirectoryOption),
             Commands.LogCommand.Build(context, WorkingDirectoryOption),
             Commands.DiffCommand.Build(context, WorkingDirectoryOption),
+            Commands.CheckoutCommand.Build(context, WorkingDirectoryOption),
         };
         return rootCommand;
     }

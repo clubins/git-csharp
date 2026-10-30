@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Scion.Cli.Local;
+using Scion.Cli.Working;
 
 namespace Scion.Cli.Cache;
 
@@ -11,7 +12,7 @@ namespace Scion.Cli.Cache;
 /// This is the seam fetch and materialization paths share — they call <see cref="Put"/> after a
 /// download and <see cref="TryGet"/> before one; the cache owns nothing beyond its directory.
 /// </summary>
-internal sealed class LruBlobCache(string directory, long maxBytes = LruBlobCache.DefaultMaxBytes)
+internal sealed class LruBlobCache(string directory, long maxBytes = LruBlobCache.DefaultMaxBytes) : IBlobCache
 {
     /// <summary>The spec's default cap: 2 GiB.</summary>
     public const long DefaultMaxBytes = 2L * 1024 * 1024 * 1024;

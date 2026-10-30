@@ -39,7 +39,7 @@ internal sealed class FetchTreesEndpoints(
             var missingSet = missing.ToHashSet(StringComparer.Ordinal);
             var present = walked.BlobHashes.Where(hash => !missingSet.Contains(hash)).ToList();
 
-            return Results.Json(new FetchTreesMissingResponse(rootTree, present, missing));
+            return Results.Json(new FetchTreesMissingResponse(rootTree, present, missing, walked.Entries));
         });
     }
 
