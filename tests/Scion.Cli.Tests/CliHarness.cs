@@ -29,6 +29,14 @@ public sealed class CliHarness : IDisposable
         return (exit, writer.ToString());
     }
 
+    /// <summary>Runs the pipeline against a different working directory on this harness's server — a second working copy.</summary>
+    public (int Exit, string Output) RunIn(string directory, params string[] args)
+    {
+        var writer = new StringWriter();
+        var exit = Program.Run(["-C", directory, .. args], new CliContext(writer, writer, Factory.Server.CreateHandler()));
+        return (exit, writer.ToString());
+    }
+
     /// <summary>A GET against the test server with the harness's token, parsed as JSON.</summary>
     public async Task<JsonElement> GetJsonAsync(string requestUri)
     {

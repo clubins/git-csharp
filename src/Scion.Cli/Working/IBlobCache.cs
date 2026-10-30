@@ -12,7 +12,7 @@ internal interface IBlobCache
     bool TryGet(string hash, out byte[] content);
 
     /// <summary>Stores a verified blob's content under its address; the cache owns eviction.</summary>
-    void Put(string hash, byte[] content);
+    bool Put(string hash, byte[] content);
 }
 
 /// <summary>The absent cache: every lookup misses, every put is discarded.</summary>
@@ -26,7 +26,5 @@ internal sealed class NullBlobCache : IBlobCache
         return false;
     }
 
-    public void Put(string hash, byte[] content)
-    {
-    }
+    public bool Put(string hash, byte[] content) => false;
 }

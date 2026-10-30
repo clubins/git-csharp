@@ -25,12 +25,6 @@ internal sealed record FetchedPath(string Path, string BlobHash, FileContentKind
 /// <summary>The blobs/missing request body: the content addresses the client wants.</summary>
 internal sealed record MissingBlobsPayload(IReadOnlyList<string> Blobs);
 
-/// <summary>A page of the log — the newest-tip lookup reads its first entry.</summary>
-internal sealed record LogPage(IReadOnlyList<LoggedChangeset> Changesets, string? NextAfter);
-
-/// <summary>One logged changeset: the id is all the materializer needs.</summary>
-internal sealed record LoggedChangeset(string Id);
-
 internal sealed partial class ScionServerClient
 {
     /// <summary>
@@ -57,10 +51,8 @@ internal sealed partial class ScionServerClient
     /// <summary>The server's newest changeset id — where a fresh working copy checks out from — or null when the log is empty.</summary>
     public async Task<string?> NewestChangesetIdAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await client.GetAsync("rpc/log?limit=1", cancellationToken);
-        await EnsureSuccessAsync(response, "history lookup", cancellationToken);
-        var page = await response.Content.ReadFromJsonAsync<LogPage>(JsonOptions, cancellationToken);
-        return page?.Changesets is { Count: > 0 } entries ? entries[0].Id : null;
+        var page = await LogAsync(null, null, 1, cancellationToken);
+        return page.Changesets is { Length: > 0 } entries ? entries[0].Id : null;
     }
 
     /// <summary>
