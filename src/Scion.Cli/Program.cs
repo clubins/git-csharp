@@ -1,12 +1,50 @@
+using System.CommandLine;
+
 namespace Scion.Cli;
 
-// Thin `scn` client. Commands (init, commit, log, diff, checkout) arrive in later PRs -
-// this scaffold exists so the project layout, build, and test wiring are proven end to end.
+/// <summary>
+/// The <c>scn</c> entry point: the root command with its global <c>-C</c> option (run as if
+/// started in this directory, like git's), the three commands of the thin-client core, and the
+/// failure mapping — parse errors are printed by the framework, command failures surface as
+/// one-line messages on stderr with exit code 1.
+/// </summary>
 internal static class Program
 {
-    public static int Main(string[] args)
+    private static readonly Option<string?> WorkingDirectoryOption = new("-C")
     {
-        Console.WriteLine("scn: thin client for the Scion server (scaffold - no commands yet)");
-        return 0;
+        Description = "Run as if scn was started in this directory instead of the current one",
+    };
+
+    public static int Main(string[] args) => Run(args, new CliContext(Console.Out, Console.Error));
+
+    /// <summary>Parses and invokes the root command against a context — the seam tests use to drive the real pipeline with captured output and a test-server handler.</summary>
+    public static int Run(string[] args, CliContext context)
+    {
+        try
+        {
+            return Build(context).Parse(args).Invoke();
+        }
+        catch (Exception exception) when (exception is ScionCliException or ScionServerException)
+        {
+            context.Err.WriteLine($"scn: {exception.Message}");
+            return 1;
+        }
+        catch (Exception exception)
+        {
+            context.Err.WriteLine($"scn: unexpected failure: {exception.Message}");
+            return 1;
+        }
+    }
+
+    internal static RootCommand Build(CliContext context)
+    {
+        var rootCommand = new RootCommand("scn - the thin Scion client. Never clones; the server answers what git makes every client compute.")
+        {
+            WorkingDirectoryOption,
+            Commands.InitCommand.Build(context, WorkingDirectoryOption),
+            Commands.StatusCommand.Build(context, WorkingDirectoryOption),
+            Commands.CommitCommand.Build(context, WorkingDirectoryOption),
+        };
+        return rootCommand;
     }
 }
