@@ -37,10 +37,11 @@ dotnet build
 dotnet test
 ```
 
-Run the server locally (once it does more than the scaffold):
+Run the server locally (once it does more than the scaffold). The server fails closed: it
+refuses to start without a bearer token configured.
 
 ```bash
-dotnet run --project src/Scion.Server
+Scion__AuthToken=change-me dotnet run --project src/Scion.Server
 ```
 
 ## Conventions
