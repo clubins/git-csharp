@@ -1,17 +1,17 @@
-namespace Scion.Server;
+using Scion.Server;
 
-// ASP.NET Core host for the source-control APIs. Endpoints (create-changeset, log, diff,
-// blame, ref CAS, blob fetch) arrive in later PRs; this scaffold proves the wiring builds.
-// Kept `partial` and public so WebApplicationFactory-based tests can reach Program later.
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScionServer();
+
+var app = builder.Build();
+
+app.UseScionServer();
+app.MapScionEndpoints();
+
+app.Run();
+
+// Public and partial so WebApplicationFactory-based tests can reference the host type.
 public partial class Program
 {
-    public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-        var app = builder.Build();
-
-        app.MapGet("/", () => "Scion server (scaffold)");
-
-        app.Run();
-    }
 }
