@@ -35,6 +35,7 @@ public static class ScionStorageServiceCollectionExtensions
 
         services.AddSingleton<IScionEndpoints, ChangesetEndpoints>();
         services.AddSingleton<IScionEndpoints, BlobEndpoints>();
+        services.AddSingleton<IScionEndpoints, FetchBlobsEndpoints>();
         return services;
     }
 
