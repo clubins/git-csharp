@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using Scion.Server.Auth;
@@ -16,6 +18,11 @@ public static class ScionServerServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddScionServer(this IServiceCollection services)
     {
+        // Enums cross the wire as lowercase names, not numbers — a diff entry says "added", not 0 —
+        // so agent-side payloads and logs stay readable and stable under enum reorderings.
+        services.ConfigureHttpJsonOptions(static options =>
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+
         services.AddOptions<ScionAuthOptions>()
             .BindConfiguration(ScionAuthOptions.SectionName)
             .Validate(
