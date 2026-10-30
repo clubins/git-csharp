@@ -8,7 +8,7 @@ namespace Scion.Server.Storage;
 public static class ScionStorageServiceCollectionExtensions
 {
     /// <summary>The shared SQLite database file: changeset log and ref store each own their tables in it.</summary>
-    private const string DatabaseFileName = "scion.db";
+    internal const string DatabaseFileName = "scion.db";
 
     /// <summary>The blob store's root directory, beside the database.</summary>
     private const string BlobDirectoryName = "blobs";

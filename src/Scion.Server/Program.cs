@@ -1,10 +1,12 @@
 using Scion.Server;
+using Scion.Server.Derived;
 using Scion.Server.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScionServer();
 builder.Services.AddScionStorage();
+builder.Services.AddScionDerivedData();
 
 var app = builder.Build();
 
