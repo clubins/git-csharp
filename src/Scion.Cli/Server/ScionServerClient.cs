@@ -62,7 +62,51 @@ internal sealed class ScionServerClient(string serverUrl, string? token, HttpMes
         return result ?? throw new ScionServerException(response.StatusCode, "The server's trees/missing response was empty.");
     }
 
+    /// <summary>
+    /// Pages first-parent history from the server, newest-first — the walk happens server-side;
+    /// the client names a tip (or none, for the newest appended changeset) and renders what came
+    /// back. <paramref name="after"/> is the previous page's resume cursor and wins over the tip.
+    /// </summary>
+    public async Task<LogPage> LogAsync(string? tip, string? after, int? limit, CancellationToken cancellationToken = default)
+    {
+        List<string> query = [];
+        if (tip is not null)
+        {
+            query.Add($"tip={Uri.EscapeDataString(tip)}");
+        }
+
+        if (after is not null)
+        {
+            query.Add($"after={Uri.EscapeDataString(after)}");
+        }
+
+        if (limit is { } pageLimit)
+        {
+            query.Add($"limit={pageLimit}");
+        }
+
+        using var response = await client.GetAsync(BuildUri("rpc/log", query), cancellationToken);
+        await EnsureSuccessAsync(response, "log query", cancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<LogPage>(JsonOptions, cancellationToken);
+        return result ?? throw new ScionServerException(response.StatusCode, "The server's log response was empty.");
+    }
+
+    /// <summary>
+    /// The rename-aware delta between any two changesets' trees — computed server-side from the
+    /// tree-snapshot index; the client never materializes a tree to diff (client–server asymmetry).
+    /// </summary>
+    public async Task<DiffPage> DiffAsync(string from, string to, CancellationToken cancellationToken = default)
+    {
+        using var response = await client.GetAsync(BuildUri("rpc/diff", [$"from={Uri.EscapeDataString(from)}", $"to={Uri.EscapeDataString(to)}"]), cancellationToken);
+        await EnsureSuccessAsync(response, "diff query", cancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<DiffPage>(JsonOptions, cancellationToken);
+        return result ?? throw new ScionServerException(response.StatusCode, "The server's diff response was empty.");
+    }
+
     public void Dispose() => client.Dispose();
+
+    private static string BuildUri(string path, IReadOnlyList<string> query) =>
+        query.Count == 0 ? path : $"{path}?{string.Join("&", query)}";
 
     private static HttpClient CreateClient(string serverUrl, string? token, HttpMessageHandler? handler)
     {
