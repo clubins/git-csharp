@@ -10,7 +10,7 @@ agents should add no source-control contention.
 
 ## Status
 
-Scaffold only - solution layout, test harness, and CI. Scion features arrive in later PRs; the
+Scaffold only - solution layout and test harness. Scion features arrive in later PRs; the
 approved design lives in the project blueprint ("Scion in C#: a server-centric VCS for agent
 fleets").
 
@@ -30,7 +30,7 @@ fleets").
 ## Build and test
 
 Requires the .NET SDK pinned in [`global.json`](global.json) (.NET 10 LTS, `rollForward:
-latestFeature`). CI installs it via `actions/setup-dotnet` reading the same file.
+latestFeature`).
 
 ```bash
 dotnet build
