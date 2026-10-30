@@ -39,4 +39,6 @@ internal static class ScionPaths
     public static string ConfigPath(string repoRoot) => Path.Combine(StateDirectory(repoRoot), "config.json");
 
     public static string StatePath(string repoRoot) => Path.Combine(StateDirectory(repoRoot), "state.json");
+
+    public static string SparseProfilePath(string repoRoot) => Path.Combine(StateDirectory(repoRoot), "sparse.json");
 }

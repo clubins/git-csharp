@@ -28,9 +28,10 @@ internal sealed class WorkingCopyMaterializer(ScionServerClient client, IBlobCac
         string repoRoot,
         string changesetId,
         IReadOnlyList<string>? wantedPaths,
-        CancellationToken cancellationToken)
+        IReadOnlyList<string>? sparseProfile = null,
+        CancellationToken cancellationToken = default)
     {
-        var fetch = await client.TreeEntriesAsync(changesetId, wantedPaths, sparseProfile: null, cancellationToken);
+        var fetch = await client.TreeEntriesAsync(changesetId, wantedPaths, sparseProfile, cancellationToken);
         if (fetch.MissingBlobs.Count > 0)
         {
             throw new ScionCliException(
