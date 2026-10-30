@@ -20,3 +20,12 @@ internal sealed record CreatedChangeset(string Id);
 
 /// <summary>The trees/missing response: the walked tree's hash, and which of its blob hashes the server store holds or lacks.</summary>
 internal sealed record TreesMissing(string RootTree, IReadOnlyList<string> PresentBlobs, IReadOnlyList<string> MissingBlobs);
+
+/// <summary>One log entry as the server stores it: parents included so the lineage renders.</summary>
+internal sealed record LogChangeset(string Id, string[] Parents, string Message, Author Author, long TimestampUtc);
+
+/// <summary>The log response: first-parent entries newest-first, plus the resume cursor when the page filled.</summary>
+internal sealed record LogPage(LogChangeset[] Changesets, string? NextAfter);
+
+/// <summary>The diff response: the rename-aware delta between any two changesets' trees, computed server-side.</summary>
+internal sealed record DiffPage(string From, string To, ChangeEntry[] Changes);
