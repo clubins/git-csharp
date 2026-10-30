@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Scion.Bench/Scion.Bench.csproj" />
+    <Project Path="src/Scion.Cli/Scion.Cli.csproj" />
+    <Project Path="src/Scion.Core/Scion.Core.csproj" />
+    <Project Path="src/Scion.Import.Git/Scion.Import.Git.csproj" />
+    <Project Path="src/Scion.Server/Scion.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Scion.Cli.Tests/Scion.Cli.Tests.csproj" />
+    <Project Path="tests/Scion.Core.Tests/Scion.Core.Tests.csproj" />
+    <Project Path="tests/Scion.Server.Tests/Scion.Server.Tests.csproj" />
+  </Folder>
+</Solution>
