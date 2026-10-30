@@ -14,7 +14,7 @@ namespace Scion.Cli.Server;
 /// always safe. Failures surface as <see cref="ScionServerException"/> carrying the server's
 /// ProblemDetails detail when one came back.
 /// </summary>
-internal sealed class ScionServerClient(string serverUrl, string? token, HttpMessageHandler? handler = null) : IDisposable
+internal sealed partial class ScionServerClient(string serverUrl, string? token, HttpMessageHandler? handler = null) : IDisposable
 {
     // The exact options the server serializes with: Web defaults plus camelCase string enums
     // (verified against ScionServerServiceCollectionExtensions), so both ends hash the same wire.

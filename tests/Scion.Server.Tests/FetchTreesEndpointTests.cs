@@ -230,6 +230,29 @@ public sealed class FetchTreesEndpointTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Walk_EntriesCarryTheScopedPathsWithTheirHashesAndKinds()
+    {
+        var root = await CommitRootAsync();
+
+        var (response, json) = await WalkRawAsync(new { changesetId = root.Id, wantedPaths = new[] { "src/**" } });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var entries = json.GetProperty("entries").EnumerateArray().ToList();
+        Assert.Equal(
+            new[] { "src/Scion.Core/A.cs", "src/Scion.Core/B.cs" },
+            entries.Select(entry => entry.GetProperty("path").GetString()).ToArray());
+        foreach (var entry in entries)
+        {
+            Assert.Equal(
+                BlobFor(RootFixture.Single(fixture => fixture.Path == entry.GetProperty("path").GetString()).Content).Hash,
+                entry.GetProperty("blobHash").GetString());
+        }
+
+        // The kind rides along — the working-copy materializer's write instruction.
+        Assert.Equal("regular", entries[0].GetProperty("kind").GetString());
+    }
+
     private async Task<Changeset> CommitRootAsync()
     {
         var changeset = Changeset.Create(
